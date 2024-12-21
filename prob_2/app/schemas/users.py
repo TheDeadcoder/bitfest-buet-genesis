@@ -13,8 +13,11 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     pass
 
-class UserUpdate(UserBase):
-    pass
+class UserUpdate(BaseModel):
+    name: Optional[str] = None
+    address: Optional[str] = None
+    country: Optional[str] = None
+    occupation: Optional[str] = None
 
 class UserInDBBase(UserBase):
     id: UUID
