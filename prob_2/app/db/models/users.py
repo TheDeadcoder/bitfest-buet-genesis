@@ -22,3 +22,6 @@ class User(Base):
     
     # one tyo many relationship with Recipe
     recipes = relationship("Recipe", back_populates="user", cascade="all, delete-orphan")
+
+    #one to many relationship with Chat
+    chats = relationship("Chat", back_populates="user", cascade="all, delete-orphan")

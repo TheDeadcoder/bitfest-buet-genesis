@@ -6,19 +6,19 @@ from sqlalchemy.exc import SQLAlchemyError
 from pydantic import ValidationError
 
 from app.api import deps
-from app.db.models.ingredients import Ingredient as IngredientModel
-from app.schemas.ingredients import IngredientCreate, IngredientUpdate, IngredientInDBBase
+from app.db.models.recipes import Recipe as RecipeModel
+from app.schemas.recipes import RecipeCreate, RecipeUpdate, RecipeInDBBase
 
 router = APIRouter()
 
 #################################################################################################
-#   GET ALL INGREDIENTS
+#   GET ALL RECIPES
 #################################################################################################
-@router.get("/", response_model=List[IngredientInDBBase])
-async def get_ingredients(db: Session = Depends(deps.get_db)):
+@router.get("/", response_model=List[RecipeInDBBase])
+async def get_recipes(db: Session = Depends(deps.get_db)):
     try:
-        ingredients = db.query(IngredientModel).all()
-        return ingredients
+        recipes = db.query(RecipeModel).all()
+        return recipes
     except SQLAlchemyError as e:
         raise HTTPException(status_code=500, detail="Database error: " + str(e))
     except Exception as e:
@@ -26,28 +26,28 @@ async def get_ingredients(db: Session = Depends(deps.get_db)):
 
 
 #################################################################################################
-#   GET INGREDIENT BY ID
+#   GET RECIPE BY ID
 #################################################################################################
-@router.get("/{ingredient_id}", response_model=IngredientInDBBase)
-async def get_ingredient_by_id(ingredient_id: uuid.UUID, db: Session = Depends(deps.get_db)):
+@router.get("/{recipe_id}", response_model=RecipeInDBBase)
+async def get_recipe_by_id(recipe_id: uuid.UUID, db: Session = Depends(deps.get_db)):
     try:
-        ingredient = db.query(IngredientModel).filter(IngredientModel.id == ingredient_id).first()
-        if not ingredient:
-            raise HTTPException(status_code=404, detail="Ingredient not found")
-        return ingredient
+        recipe = db.query(RecipeModel).filter(RecipeModel.id == recipe_id).first()
+        if not recipe:
+            raise HTTPException(status_code=404, detail="Recipe not found")
+        return recipe
     except SQLAlchemyError as e:
         raise HTTPException(status_code=500, detail="Database error: " + str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail="Unexpected error: " + str(e))
     
 #################################################################################################
-#   GET ALL INGREDIENTS for a user
+#   GET ALL RECIPES for a user
 #################################################################################################
-@router.get("/user/{user_id}", response_model=List[IngredientInDBBase])
-async def get_ingredients_for_user(user_id: uuid.UUID,db: Session = Depends(deps.get_db)):
+@router.get("/user/{user_id}", response_model=List[RecipeInDBBase])
+async def get_recipes_of_user(user_id: uuid.UUID,db: Session = Depends(deps.get_db)):
     try:
-        ingredients = db.query(IngredientModel).filter(IngredientModel.user_id == user_id).all()
-        return ingredients
+        recipes = db.query(RecipeModel).filter(RecipeModel.user_id == user_id).all()
+        return recipes
     except SQLAlchemyError as e:
         raise HTTPException(status_code=500, detail="Database error: " + str(e))
     except Exception as e:
@@ -55,21 +55,20 @@ async def get_ingredients_for_user(user_id: uuid.UUID,db: Session = Depends(deps
 
 
 #################################################################################################
-#   CREATE INGREDIENT
+#   CREATE RECIPE
 #################################################################################################
-@router.post("/", response_model=IngredientInDBBase)
-async def create_ingredient(ingredient_in: IngredientCreate, db: Session = Depends(deps.get_db)):
+@router.post("/", response_model=RecipeInDBBase)
+async def create_recipe(recipe_in: RecipeCreate, db: Session = Depends(deps.get_db)):
     try:
-        new_ingredient = IngredientModel(
-            ingredient_name=ingredient_in.ingredient_name,
-            ingredient_description=ingredient_in.ingredient_description,
-            ingredient_quantity=ingredient_in.ingredient_quantity,
-            user_id=ingredient_in.user_id,
+        new_recipe = RecipeModel(
+            recipe_name=recipe_in.recipe_name,
+            recipe_text=recipe_in.recipe_text,
+            user_id=recipe_in.user_id,
         )
-        db.add(new_ingredient)
+        db.add(new_recipe)
         db.commit()
-        db.refresh(new_ingredient)
-        return new_ingredient
+        db.refresh(new_recipe)
+        return new_recipe
     except ValidationError as ve:
         raise HTTPException(status_code=422, detail=str(ve))
     except SQLAlchemyError as e:
@@ -81,24 +80,24 @@ async def create_ingredient(ingredient_in: IngredientCreate, db: Session = Depen
 
 
 #################################################################################################
-#   UPDATE INGREDIENT BY ID
+#   UPDATE RECIPE BY ID
 #################################################################################################
-@router.put("/{ingredient_id}", response_model=IngredientInDBBase)
-async def update_ingredient_by_id(
-    ingredient_id: uuid.UUID, ingredient_in: IngredientUpdate, db: Session = Depends(deps.get_db)
+@router.put("/{recipe_id}", response_model=RecipeInDBBase)
+async def update_recipe_by_id(
+    recipe_id: uuid.UUID, recipe_in: RecipeUpdate, db: Session = Depends(deps.get_db)
 ):
     try:
-        ingredient = db.query(IngredientModel).filter(IngredientModel.id == ingredient_id).first()
-        if not ingredient:
-            raise HTTPException(status_code=404, detail="Ingredient not found")
+        recipe = db.query(RecipeModel).filter(RecipeModel.id == recipe_id).first()
+        if not recipe:
+            raise HTTPException(status_code=404, detail="Recipe not found")
 
-        update_data = ingredient_in.model_dump(exclude_unset=True)
+        update_data = recipe_in.model_dump(exclude_unset=True)
         for key, value in update_data.items():
-            setattr(ingredient, key, value)
+            setattr(recipe, key, value)
 
         db.commit()
-        db.refresh(ingredient)
-        return ingredient
+        db.refresh(recipe)
+        return recipe
     except ValidationError as ve:
         raise HTTPException(status_code=422, detail=str(ve))
     except SQLAlchemyError as e:
@@ -110,18 +109,18 @@ async def update_ingredient_by_id(
 
 
 #################################################################################################
-#   DELETE INGREDIENT BY ID
+#   DELETE RECIPE BY ID
 #################################################################################################
-@router.delete("/{ingredient_id}", status_code=204)
-async def delete_ingredient_by_id(ingredient_id: uuid.UUID, db: Session = Depends(deps.get_db)):
+@router.delete("/{recipe_id}", status_code=204)
+async def delete_recipe_by_id(recipe_id: uuid.UUID, db: Session = Depends(deps.get_db)):
     try:
-        ingredient = db.query(IngredientModel).filter(IngredientModel.id == ingredient_id).first()
-        if not ingredient:
-            raise HTTPException(status_code=404, detail="Ingredient not found")
+        recipe = db.query(RecipeModel).filter(RecipeModel.id == recipe_id).first()
+        if not recipe:
+            raise HTTPException(status_code=404, detail="Recipe not found")
 
-        db.delete(ingredient)
+        db.delete(recipe)
         db.commit()
-        return {"detail": "Ingredient successfully deleted"}
+        return {"detail": "Recipe successfully deleted"}
     except SQLAlchemyError as e:
         db.rollback()
         raise HTTPException(status_code=500, detail="Database error: " + str(e))
