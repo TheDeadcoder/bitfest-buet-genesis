@@ -50,5 +50,9 @@ execute the following command
 
 - AI response
 ![ai](https://cyzajynbjmgjijpbdgvg.supabase.co/storage/v1/object/public/statics/ai_chat.jpg)
+
+
+## Env file
+[Drive link for env](https://drive.google.com/file/d/1_K_W5638rK1AQlSNNzYv3ZknqWZn6VCb/view?usp=sharing)
   
 
