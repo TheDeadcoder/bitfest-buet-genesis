@@ -89,3 +89,29 @@ async def update_user_by_id(*, db: Session = Depends(deps.get_db), user_id: uuid
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail="Unexpected error: " + str(e))
+
+
+#################################################################################################
+#   DELETE USER BY ID
+#################################################################################################
+@router.delete("/{user_id}", status_code=204)
+async def delete_user_by_id(user_id: uuid.UUID, db: Session = Depends(deps.get_db)):
+    try:
+        db_user = db.query(UserModel).filter(UserModel.id == user_id).first()
+        
+        if not db_user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        # Delete the user
+        db.delete(db_user)
+        db.commit()
+        
+        return {"detail": "User successfully deleted"}
+    except HTTPException as http_exc:
+        raise http_exc
+    except SQLAlchemyError as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Database error: " + str(e))
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Unexpected error: " + str(e))

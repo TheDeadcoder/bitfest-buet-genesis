@@ -21,8 +21,8 @@ class IngredientUpdate(BaseModel):
 
 class IngredientInDBBase(IngredientBase):
     id: UUID
-    created_at: datetime
-    updated_at: datetime
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
     class Config:
         orm_mode = True
