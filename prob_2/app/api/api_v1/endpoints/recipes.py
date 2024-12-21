@@ -1,6 +1,6 @@
 from typing import List
 import uuid
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, File as FastAPIFile, Form, UploadFile
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 from pydantic import ValidationError
@@ -121,6 +121,42 @@ async def delete_recipe_by_id(recipe_id: uuid.UUID, db: Session = Depends(deps.g
         db.delete(recipe)
         db.commit()
         return {"detail": "Recipe successfully deleted"}
+    except SQLAlchemyError as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Database error: " + str(e))
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Unexpected error: " + str(e))
+
+#################################################################################################
+#   CREATE RECIPE FROM FILE
+#################################################################################################
+@router.post("/from-file", response_model=RecipeInDBBase)
+async def create_recipe_from_file(
+    recipe_name: str = Form(...),
+    user_id: uuid.UUID = Form(...),
+    recipe_file: UploadFile = FastAPIFile(...),
+    db: Session = Depends(deps.get_db)
+):
+    try:
+        if not recipe_file or recipe_file.content_type != "text/plain":
+            raise HTTPException(status_code=400, detail="Invalid file type. Only text files are allowed.")
+
+        recipe_text = (await recipe_file.read()).decode("utf-8")
+
+        new_recipe = RecipeModel(
+            recipe_name=recipe_name,
+            recipe_text=recipe_text,
+            user_id=user_id,
+        )
+        db.add(new_recipe)
+        db.commit()
+        db.refresh(new_recipe)
+
+        return new_recipe
+
+    except UnicodeDecodeError:
+        raise HTTPException(status_code=400, detail="Error decoding file. Please upload a valid text file.")
     except SQLAlchemyError as e:
         db.rollback()
         raise HTTPException(status_code=500, detail="Database error: " + str(e))
